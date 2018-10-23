@@ -109,6 +109,8 @@ class Img_segment7{
 			height=width=0;
 			result=-1;
 			memset(img,0,sizeof(img));
+			bx=by=L=R=T=B=LBx=LBy=Wth=Lth=dx=dy=0;
+			memset(b,0,sizeof(b));
 		}
 		void input_file(char *filename)
 		{
@@ -125,7 +127,17 @@ class Img_segment7{
 				}
 			fin.close();
 		}
-		void reduce_niose()
+		void input_image(int** a,int h,int w)//notice that the form of input image is:x-axis right,y-axis down
+		{
+			width=w;
+			height=h;
+			int j,x,y;
+			for(y=0,j=h-1;y<h;y++,j--)
+			    for(x=0;x<w;x++){
+			    	img[x][j]=a[x][y];//the form of img is:x-axis right,y-axis up
+				}
+		}
+		void reduce_noise()
 		{
 			reduce_noise1();
 			reduce_noise2(reduce_noise_constant2);
@@ -139,6 +151,18 @@ class Img_segment7{
 					else std::cout<<" ";
 				std::cout<<"\n";
 			}
+		}
+		void output_img_file(char *filename)
+		{
+			std::ofstream fout(filename);
+			int x,y;
+			fout<<width<<" "<<height<<std::endl;
+			for(y=height-1;y>=0;y--){
+				for(x=0;x<width;x++)
+			        fout<<img[x][y];
+				fout<<std::endl;
+			}
+			fout.close();
 		}
 		void output_img2()
 		{
@@ -390,10 +414,10 @@ class Img_segment7{
 						else sv[3]+=addit;
 					}
 				}
-			if(sv[0]>=4)display[4]=1;//the "2" depend on block_size
-			if(sv[1]>=4)display[1]=1;
-			if(sv[2]>=4)display[5]=1;
-			if(sv[3]>=4)display[2]=1;
+			if(sv[0]>=8)display[4]=1;//the "2" depend on block_size
+			if(sv[1]>=8)display[1]=1;
+			if(sv[2]>=8)display[5]=1;
+			if(sv[3]>=8)display[2]=1;
 			int sh[3]={0,0,0};//sum of horizontal block in three parts
 			//subscript 0,1,2 for T,M,B
 			for(i=0;i<bx;i++){
@@ -401,9 +425,9 @@ class Img_segment7{
 				for(;j<(by<<1)/3;j++)if(hv[i][j]==1)++sh[1];else if(hv[i][j]==3)sh[1]+=1;
 				for(;j<by;j++)if(hv[i][j]==1)++sh[2];else if(hv[i][j]==3)sh[2]+=1;
 			}
-			if(sh[0]>=7)display[6]=1;
-			if(sh[1]>=7)display[3]=1;
-			if(sh[2]>=7)display[0]=1;
+			if(sh[0]>=10)display[6]=1;
+			if(sh[1]>=10)display[3]=1;
+			if(sh[2]>=10)display[0]=1;
 			if(!display[0]&&!display[3]&&!display[6])result=1;
 			else if(display[5])result=3;
 			else result=2;
