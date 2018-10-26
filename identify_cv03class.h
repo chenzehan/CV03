@@ -25,6 +25,8 @@ const int co_x=1;
 const int co_y=2;//block_sizeL is 2*block_sizeW 
 const int block_sqrLim=36;//shoule be adjusted along with block_size & co_x,y
 const int min_dense=2;//the min density for a block to sprawl
+const int verti_limit=6;
+const int horiz_limit=8;
 typedef struct {//plane vector
 	int x,y;
 	int basic_direction()//consistent with dirx,y
@@ -414,21 +416,22 @@ class Img_segment7{
 						else sv[3]+=addit;
 					}
 				}
-			if(sv[0]>=8)display[4]=1;//the "2" depend on block_size
-			if(sv[1]>=8)display[1]=1;
-			if(sv[2]>=8)display[5]=1;
-			if(sv[3]>=8)display[2]=1;
+			if(sv[0]>=verti_limit)display[4]=1;//the "2" depend on block_size
+			if(sv[1]>=verti_limit)display[1]=1;
+			if(sv[2]>=verti_limit)display[5]=1;
+			if(sv[3]>=verti_limit)display[2]=1;
 			int sh[3]={0,0,0};//sum of horizontal block in three parts
 			//subscript 0,1,2 for T,M,B
 			for(i=0;i<bx;i++){
 				for(j=0;j<by/3;j++)if(hv[i][j]==1)sh[0]+=2;else if(hv[i][j]==3)sh[0]+=1;
-				for(;j<(by<<1)/3;j++)if(hv[i][j]==1)++sh[1];else if(hv[i][j]==3)sh[1]+=1;
-				for(;j<by;j++)if(hv[i][j]==1)++sh[2];else if(hv[i][j]==3)sh[2]+=1;
+				for(;j<(by<<1)/3;j++)if(hv[i][j]==1)sh[1]+=2;else if(hv[i][j]==3)sh[1]+=1;
+				for(;j<by;j++)if(hv[i][j]==1)sh[2]+=2;else if(hv[i][j]==3)sh[2]+=1;
 			}
-			if(sh[0]>=10)display[6]=1;
-			if(sh[1]>=10)display[3]=1;
-			if(sh[2]>=10)display[0]=1;
-			if(!display[0]&&!display[3]&&!display[6])result=1;
+			if(sh[0]>=horiz_limit)display[6]=1;
+			if(sh[1]>=horiz_limit)display[3]=1;
+			if(sh[2]>=horiz_limit)display[0]=1;
+			if(!display[1]&&!display[2]&&!display[4]&&!display[5])result=-1;
+			else if(!display[0]&&!display[3]&&!display[6])result=1;
 			else if(display[5])result=3;
 			else result=2;
 		}

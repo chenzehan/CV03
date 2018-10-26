@@ -12,13 +12,13 @@ using namespace Gdiplus;
 
 const int sdirx[12]={1,0,-1,0,2,1,0,-1,-2,-1,0,1};
 const int sdiry[12]={0,1,0,-1,0,-1,-2,-1,0,1,2,1};
-const int thres_min_R=200;
-const int thres_max_G=150;
-const int thres_max_B=150;
+const int thres_min_R=190;
+const int thres_max_G=160;
+const int thres_max_B=160;
 const int dis_max_R=100;
 const int dis_max_G=100;
 const int dis_max_B=100;
-const int const_catch=64;
+const int const_catch=256;
 const int const_sample=128;
 struct Colour{
 	int R,G,B;
@@ -61,8 +61,20 @@ bool Get_sample(int px,int py,Bitmap* bmp,Img_segment7* s,int &cx,int &cy)
 				qy.push(vy);
 			}
 		}
+		if(qx.empty()){
+			int i,j;
+			for(j=T;j<B;j++)
+			    for(i=L;i<R;i++)if(!vis[i][j]){
+			    	vis[i][j]=1;
+			    	if(sp[i][j].R>thres_min_R&&sp[i][j].G<thres_max_G
+					&&sp[i][j].B<thres_max_B){
+						qx.push(i);
+						qy.push(j);
+					}
+				}
+		}
 	}
-	if(sum<5)return false;
+	if(sum<60)return false;
 	int i,j;
 	int tot=0;
 	int Rtot=0,Gtot=0,Btot=0;
@@ -119,10 +131,10 @@ int main()
     GdiplusStartupInput gdiplusstartupinput;
     ULONG_PTR gdiplustoken;
     GdiplusStartup(&gdiplustoken,&gdiplusstartupinput,NULL);
- 
-    wstring infilename(L"display05.jpg");
+    
+    wstring infilename(L"display08.jpg");
     string outfilename("catch.in");
- 
+    
     Bitmap* bmp=new Bitmap(infilename.c_str());
     UINT height=bmp->GetHeight();//UINT = unsigned int
     UINT width=bmp->GetWidth();
@@ -155,7 +167,8 @@ int main()
 		fout<<endl;
 	}
     */
-	char chname[]="catch.out";
+	char chname[]="catch1.out";
+	int num=0;
     Img_segment7 s;
 	s.init();
 	for(j=0;j<h;j++)
@@ -168,7 +181,9 @@ int main()
 					s.reduce_noise();
 					s.cv_identify();
 					fout<<s.get_result()<<endl;
-					//s.output_img_file(chname);
+					num++;
+					chname[5]=num+'0';
+					s.output_img_file(chname);
 					s.init();
 				}
 			}
