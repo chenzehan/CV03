@@ -1,8 +1,3 @@
-/*-----identify_cv05.h-----*/
-
-#ifndef CV05_H 
-#define CV05_H 
-
 #include<iostream>
 #include<fstream>
 #include<cmath>
@@ -27,14 +22,16 @@ const int horiz_limit=8;
 const double joint_ratio=1.6;
 
 typedef struct {
-	int lx,ly;//location bottomleft
+	pl_vector location;//location bottomleft
 	int dx,dy;//size
-	int cx,cy;//mass centre
-	int dse;//density
+	pl_vector centre;//mass centre
+	int density;//density
 	pl_vector d[4];
 	void init()
 	{
-		lx=ly=dx=dy=cx=cy=dse=0;
+		dx=dy=density=0;
+		location.init();
+		centre.init();
 		for(int i=0;i<4;i++)d[i].init();
 	}
 }Block;
@@ -172,19 +169,17 @@ class Img_segment7{
 		void block_process(Block* b)
 		{
 			int i,j;
-			b->dse=0;
+			b->density=0;
 			pl_vector v;
 			v.init();
-			for(i=b->lx;i<b->lx+b->dx;i++)
-			    for(j=b->ly;j<b->ly+b->dy;j++)
+			for(i=b->location.x;i<b->location.x+b->dx;i++)
+			    for(j=b->location.y;j<b->location.y+b->dy;j++)
 			    	if(in_img(i,j)&&img[i][j]){
-			    		++b->dse;
-			    		v.x+=i-b->lx;
-			    		v.y+=j-b->ly;
+			    		++b->density;
+			    		v+=make_vec(i,j)+b->location;
 					}
-			if(b->dse){
-	    		b->cx=b->lx+v.x/b->dse;
-	    		b->cy=b->ly+v.y/b->dse;
+			if(b->density){
+				b->centre=b->location+v/b->density;
 			}
 		}
 		//b[i][j] is in process area
@@ -200,7 +195,7 @@ class Img_segment7{
 	    //each segment of display has a direction, which is also the direction of blocks in it
 		void block_sprawl(int i,int j,int sqrLim)
 		{
-			if(b[i][j].dse<=min_dense)return;
+			if(b[i][j].density<=min_dense)return;
 			int k;
 			bool vis[32][32];
 			memset(vis,0,sizeof(vis));
@@ -215,12 +210,11 @@ class Img_segment7{
 				for(k=0;k<4;k++){//how about space_x,y
 					v.set(u.x+dirx[k],u.y+diry[k]);
 					int sqrd=sqr_block_dis(p,v,co_x,co_y);
-					if(block_exist(v.x,v.y)&&b[v.x][v.y].dse&&!vis[v.x][v.y]&&sqrd<=sqrLim){
+					if(block_exist(v.x,v.y)&&b[v.x][v.y].density&&!vis[v.x][v.y]&&sqrd<=sqrLim){
 						q.push(v);
 						vis[v.x][v.y]=true;
 						pl_vector vec;
-						vec=b[v.x][v.y].dse*(make_vec(b[v.x][v.y].cx,b[v.x][v.y].cy)
-						    -make_vec(b[i][j].cx,b[i][j].cy));
+						vec=b[v.x][v.y].density*(b[v.x][v.y].centre-b[i][j].centre);
 						int dir=vec.basic_direction();
 						b[i][j].d[dir]=b[i][j].d[dir]+vec;
 					}
@@ -258,8 +252,7 @@ class Img_segment7{
 			//process b[][], blocks
 			for(i=0;i<bx;i++)
 			    for(j=0;j<by;j++){
-			    	b[i][j].lx=i*dx+LBx;
-			    	b[i][j].ly=j*dy+LBy;
+			    	b[i][j].location=make_vec(i*dx+LBx,j*dy+LBy);
 			    	b[i][j].dx=dx;
 			    	b[i][j].dy=dy;
 			    	block_process(&b[i][j]);
@@ -289,7 +282,7 @@ class Img_segment7{
 			for(i=0;i<bx;i++)
 	    		for(j=0;j<by;j++){
 	    			direction[i][j]=0;
-	    			if(b[i][j].dse<=min_dense)continue;
+	    			if(b[i][j].density<=min_dense)continue;
 					int mk=0,k;//mk be the max modu's subscript
 	    			for(k=0;k<4;k++){
 	  		  			modu[k]=b[i][j].d[k].modulus();
@@ -452,5 +445,15 @@ class Img_segment7{
 			Segment_process_123(horizontal,vertical,horizontal_direction,vertical_direction);
 		}
 };
-
-#endif
+int main()
+{
+	Img_segment7 img;
+	char ch[]="cv05_catch1.out";
+	img.init();
+	img.input_file(ch);
+	img.output_img2();
+	img.cv05_identify();
+	img.output_little_display();
+	std::cout<<img.get_result()<<std::endl;
+	return 0;
+}

@@ -83,6 +83,12 @@ pl_vector operator*(double a,pl_vector b)
 	b.y=round(b.y*a);
 	return b;
 }
+pl_vector operator/(pl_vector a,int b)
+{
+	a.x/=b;
+	a.y/=b;
+	return a;
+}
 int operator*(pl_vector a,pl_vector b)
 {
 	return a.x*b.x+a.y*b.y;
