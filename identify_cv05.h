@@ -1,3 +1,8 @@
+/*-----identify_cv05.h-----*/
+
+#ifndef CV05_H 
+#define CV05_H 
+
 #include<iostream>
 #include<fstream>
 #include<cmath>
@@ -7,13 +12,10 @@
 #include<stack>
 #include<vector>
 #include<set>
+#include"cv_basic.h" 
 #define imgsize1 256
 #define sqr(a) ((a)*(a))
 
-const int space_x[9]={0,1,1,0,-1,-1,-1,0,1};//9 directions
-const int space_y[9]={0,0,1,1,1,0,-1,-1,-1};
-const int dirx[4]={1,0,-1,0};//4 directions up,down,left,right
-const int diry[4]={0,1,0,-1};
 const int block_sizeW=3;//sizeW,L=width,height>>block_size
 const int block_sizeL=4;//
 const int co_x=1;
@@ -23,87 +25,7 @@ const int min_dense=2;//the min density for a block to sprawl
 const int verti_limit=6;
 const int horiz_limit=8;
 const double joint_ratio=1.6;
-typedef struct {//plane vector
-	int x,y;
-	int basic_direction()//consistent with dirx,y
-	{
-		//consider line y=x y=-x and the four parts they cut out
-		if(x>=y&&x>-y)return 0;
-		if(x>y&&x<=-y)return 3;
-		if(x<=y&&x<-y)return 2;
-		return 1;
-	}
-	double modulus()
-	{
-		return sqrt(sqr(x)+sqr(y));
-	}
-	int modulus_sqr()
-	{
-		return sqr(x)+sqr(y);
-	}
-	void set(int x_,int y_)
-	{
-		x=x_;
-		y=y_;
-	}
-	void init()
-	{
-		x=y=0;
-	}
-}pl_vector;
-//define basic vector calculation
-const pl_vector spacev[8]={{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}};
-const pl_vector dirv[4]={{1,0},{0,1},{-1,0},{0,-1}};
-pl_vector make_vec(int x,int y)
-{
-	pl_vector a;
-	a.set(x,y);
-	return a;
-}
-pl_vector operator+(pl_vector a,pl_vector b)
-{
-	pl_vector c;
-	c.x=a.x+b.x;
-	c.y=a.y+b.y;
-	return c;
-}
-void operator+=(pl_vector &a,pl_vector b)
-{
-	a.x+=b.x;
-	a.y+=b.y;
-}
-pl_vector operator-(pl_vector a,pl_vector b)
-{
-	pl_vector c;
-	c.x=a.x-b.x;
-	c.y=a.y-b.y;
-	return c;
-}
-pl_vector operator*(int a,pl_vector b)
-{
-	b.x*=a;
-	b.y*=a;
-	return b;
-}
-pl_vector operator*(double a,pl_vector b)
-{
-	b.x=round(b.x*a);
-	b.y=round(b.y*a);
-	return b;
-}
-int operator*(pl_vector a,pl_vector b)
-{
-	return a.x*b.x+a.y*b.y;
-}
-bool operator==(pl_vector a,pl_vector b)
-{
-	return a.x==b.x&&a.y==b.y;
-}
-std::ostream& operator<<(std::ostream& out,pl_vector a)
-{
-	out<<"("<<a.x<<","<<a.y<<")";
-	return out;
-}
+
 typedef struct {
 	int lx,ly;//location bottomleft
 	int dx,dy;//size
@@ -391,6 +313,10 @@ class Img_segment7{
 		Segment_display Create_segment(int** direction,int x,int y,int dir_value,int No)
 		//dir_value:2:hori,3:verti
 		{
+			No=(No<<1)|(dir_value&1);
+			/*Note
+			direction[x][y] binary form:[No(2)][0:hori/1:verti][01:joint/10:hori/11:verti]
+			*/
 			std::queue<pl_vector>q;
 			pl_vector Start=make_vec(x,y);
 			Segment_display segment;
@@ -400,8 +326,8 @@ class Img_segment7{
 			while(!q.empty()){
 				pl_vector u=q.front();
 				q.pop();
-				for(int k=0;k<4;k++){
-					pl_vector v=u+dirv[k];
+				for(int k=0;k<espace_size;k++){
+					pl_vector v=u+espacev[k];
 					if(!block_exist(v))continue;
 					if(direction[v.x][v.y]==1||direction[v.x][v.y]==dir_value||
 					((direction[v.x][v.y]&3)==1&&(direction[v.x][v.y]>>2)!=No)){
@@ -409,11 +335,11 @@ class Img_segment7{
 						q.push(v);
 					    segment.A.x=std::min(segment.A.x,v.x);
 					    segment.A.y=std::min(segment.A.y,v.y);
-					    segment.B.x=std::min(segment.B.x,v.x);
-					    segment.B.y=std::min(segment.B.y,v.y);
+					    segment.B.x=std::max(segment.B.x,v.x);
+					    segment.B.y=std::max(segment.B.y,v.y);
 					}
-					else if((direction[v.x][v.y]&3)==(dir_value^1)&&direction[v.x][v.y]>>2){
-						segment.joint.insert(direction[v.x][v.y]>>2);
+					else if((direction[v.x][v.y]&3)==(dir_value^1)&&direction[v.x][v.y]>>3){
+						segment.joint.insert(direction[v.x][v.y]>>3);
 					}
 				}
 			}
@@ -439,7 +365,7 @@ class Img_segment7{
 		pl_vector horizontal_direction,pl_vector vertical_direction)
 		{
 			//std::cout<<horizontal_direction<<std::endl<<vertical_direction<<std::endl;
-			if(vertical.size()==1||horizontal.size()==0){
+			if(horizontal.size()==0){
 				result=1;
 				display[2]=display[5]=1;
 				return;
@@ -514,8 +440,11 @@ class Img_segment7{
 				}
 			}
 			for(it=vertical.begin(),i=1;it!=vertical.end();it++,i++){
-				for(itj=it->joint.begin();itj!=it->joint.end();itj++)horizontal[*itj-1].joint.insert(i);
+				for(itj=it->joint.begin();itj!=it->joint.end();itj++){
+					horizontal[*itj-1].joint.insert(i);
+				}
 			}
+			
 			for(i=0;i<bx;i++){
 				delete[] direction[i];
 			}
@@ -523,15 +452,5 @@ class Img_segment7{
 			Segment_process_123(horizontal,vertical,horizontal_direction,vertical_direction);
 		}
 };
-int main()
-{
-	Img_segment7 img;
-	char ch[]="catch1.out";
-	img.init();
-	img.input_file(ch);
-	img.output_img2();
-	img.cv05_identify();
-	img.output_little_display();
-	std::cout<<img.get_result()<<std::endl;
-	return 0;
-}
+
+#endif
